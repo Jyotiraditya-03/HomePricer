@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HomePricer — Explainable House Price Prediction</title>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <span class="logo-icon">🏠</span>
+      <span class="logo-text">HomePricer</span>
+      <span class="logo-badge">ML</span>
+    </div>
+    <div class="header-meta">
+      <div class="metric-pill" id="header-r2">R² — </div>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Left: Input Form -->
+    <section class="panel form-panel">
+      <h2 class="panel-title">House Details</h2>
+
+      <div class="form-grid">
+        <!-- Numeric fields -->
+        <div class="field-group">
+          <label>Area <span class="unit">sqft</span></label>
+          <div class="slider-row">
+            <input type="range" id="area" min="500" max="16000" value="5000" step="50"
+                   oninput="syncNum('area')">
+            <input type="number" id="area-num" value="5000" min="500" max="16000"
+                   oninput="syncSlider('area')">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label>Bedrooms</label>
+            <div class="stepper">
+              <button onclick="step('bedrooms',-1)">−</button>
+              <span id="bedrooms-val">3</span>
+              <input type="hidden" id="bedrooms" value="3">
+              <button onclick="step('bedrooms',1)">+</button>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Bathrooms</label>
+            <div class="stepper">
+              <button onclick="step('bathrooms',-1)">−</button>
+              <span id="bathrooms-val">2</span>
+              <input type="hidden" id="bathrooms" value="2">
+              <button onclick="step('bathrooms',1)">+</button>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Stories</label>
+            <div class="stepper">
+              <button onclick="step('stories',-1)">−</button>
+              <span id="stories-val">2</span>
+              <input type="hidden" id="stories" value="2">
+              <button onclick="step('stories',1)">+</button>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Parking</label>
+            <div class="stepper">
+              <button onclick="step('parking',-1)">−</button>
+              <span id="parking-val">1</span>
+              <input type="hidden" id="parking" value="1">
+              <button onclick="step('parking',1)">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Furnishing -->
+        <div class="field-group">
+          <label>Furnishing Status</label>
+          <div class="toggle-group" id="furnishing">
+            <button class="tog active" data-val="furnished" onclick="setTog('furnishing',this)">Furnished</button>
+            <button class="tog" data-val="semi-furnished" onclick="setTog('furnishing',this)">Semi</button>
+            <button class="tog" data-val="unfurnished" onclick="setTog('furnishing',this)">None</button>
+          </div>
+        </div>
+
+        <!-- Boolean toggles -->
+        <div class="bool-grid">
+          <div class="bool-item" onclick="toggleBool(this)" data-field="mainroad" data-val="yes">
+            <span class="bool-icon">🛣️</span>
+            <span class="bool-label">Main Road</span>
+            <span class="bool-dot active"></span>
+          </div>
+          <div class="bool-item" onclick="toggleBool(this)" data-field="guestroom" data-val="no">
+            <span class="bool-icon">🛏️</span>
+            <span class="bool-label">Guest Room</span>
+            <span class="bool-dot"></span>
+          </div>
+          <div class="bool-item" onclick="toggleBool(this)" data-field="basement" data-val="no">
+            <span class="bool-icon">🏚️</span>
+            <span class="bool-label">Basement</span>
+            <span class="bool-dot"></span>
+          </div>
+          <div class="bool-item" onclick="toggleBool(this)" data-field="hotwaterheating" data-val="no">
+            <span class="bool-icon">🔥</span>
+            <span class="bool-label">Hot Water</span>
+            <span class="bool-dot"></span>
+          </div>
+          <div class="bool-item" onclick="toggleBool(this)" data-field="airconditioning" data-val="yes">
+            <span class="bool-icon">❄️</span>
+            <span class="bool-label">AC</span>
+            <span class="bool-dot active"></span>
+          </div>
+          <div class="bool-item" onclick="toggleBool(this)" data-field="prefarea" data-val="no">
+            <span class="bool-icon">⭐</span>
+            <span class="bool-label">Pref Area</span>
+            <span class="bool-dot"></span>
+          </div>
+        </div>
+      </div>
+
+      <button class="predict-btn" onclick="predict()" id="predict-btn">
+        <span class="btn-text">Predict Price</span>
+        <span class="btn-spinner" hidden>⟳</span>
+      </button>
+    </section>
+
+    <!-- Right: Results -->
+    <section class="panel results-panel">
+      <!-- Price card -->
+      <div class="price-card" id="price-card">
+        <div class="price-label">Estimated Market Price</div>
+        <div class="price-value" id="price-display">—</div>
+        <div class="price-range" id="price-range"></div>
+        <div class="price-bar-wrap" id="price-bar-wrap" hidden>
+          <div class="price-bar-track">
+            <div class="price-bar-fill" id="price-bar"></div>
+            <div class="price-bar-marker" id="price-marker"></div>
+          </div>
+          <div class="price-bar-labels">
+            <span id="bar-low"></span><span id="bar-high"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Explanation tabs -->
+      <div class="tabs" id="tabs" hidden>
+        <button class="tab active" onclick="showTab('shap',this)">SHAP</button>
+        <button class="tab" onclick="showTab('lime',this)">LIME</button>
+        <button class="tab" onclick="showTab('importance',this)">Feature Importance</button>
+      </div>
+
+      <div class="tab-content" id="tab-shap">
+        <p class="explain-desc">SHAP shows how each feature <em>pushed</em> the price up or down from the baseline.</p>
+        <div id="shap-chart"></div>
+      </div>
+      <div class="tab-content hidden" id="tab-lime">
+        <p class="explain-desc">LIME explains the prediction locally — rules that describe this specific house.</p>
+        <div id="lime-chart"></div>
+      </div>
+      <div class="tab-content hidden" id="tab-importance">
+        <p class="explain-desc">Global feature importance — how much each feature contributed across all training data.</p>
+        <div id="importance-chart"></div>
+      </div>
+
+      <div class="placeholder" id="placeholder">
+        <div class="placeholder-icon">🏡</div>
+        <p>Fill in the house details and hit <strong>Predict Price</strong> to get an explainable prediction.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

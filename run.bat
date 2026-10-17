@@ -1,0 +1,6 @@
+@echo off
+echo [1/2] Starting HomePricer API...
+start "HomePricer API" cmd /k "cd /d %~dp0 && uvicorn backend.main:app --reload --port 8000"
+timeout /t 2 >nul
+echo [2/2] Opening browser...
+start http://localhost:8000
